@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruang Asesmen: Simulasi Interview & Bedah Jawaban</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #F4F1EB; --card: #FFFFFF; --text: #1A1816; --muted: #5C554E;
+            --accent: #B5654A; --sage: #6B7F66; --border: #E5DFD5;
+            --danger: #C0392B; --warn: #D4AC0D; --success: #27AE60;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 20px; min-height: 100vh; display: flex; justify-content: center; }
+        .app { width: 100%; max-width: 640px; background: var(--card); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.06); padding: 32px 24px; margin: 20px 0; transition: background-color 0.4s ease, border-left 0.4s ease; border-left: 6px solid transparent; }
+        
+        .header { text-align: center; margin-bottom: 24px; }
+        .header h1 { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+        .header p { font-size: 13px; color: var(--muted); }
+        .progress { width: 100%; height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 32px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.4s ease; }
+
+        .node { display: none; animation: fade 0.4s ease; }
+        .node.active { display: block; }
+        @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        .q-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent); margin-bottom: 12px; }
+        .q-text { font-size: 20px; font-weight: 700; line-height: 1.3; margin-bottom: 12px; }
+        .q-desc { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+        .badge { display: inline-block; background: rgba(181,101,74,0.1); color: var(--accent); padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; margin-bottom: 12px; }
+        .badge.l3 { background: rgba(192,57,43,0.1); color: var(--danger); }
+
+        .option { display: block; width: 100%; text-align: left; padding: 16px; margin-bottom: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+        .option:hover { border-color: var(--accent); background: #FAF7F2; transform: translateY(-1px); }
+        .option-label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 6px; display: block; }
+        .option-text { font-size: 15px; color: var(--text); line-height: 1.5; font-weight: 500; }
+
+        .btn { display: block; width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; background: var(--text); color: #fff; margin-top: 16px; font-family: inherit; text-align: center; text-decoration: none; }
+        .btn:hover { background: #000; }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-copy { background: var(--accent); margin-top: 12px; }
+        .btn-viral { background: #25D366; margin-top: 12px; }
+
+        .name-input-group { margin-top: 24px; text-align: left; }
+        .name-label { display: block; font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+        .name-input { width: 100%; padding: 14px 16px; border: 2px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 15px; color: var(--text); background: #FAF7F2; transition: all 0.2s; }
+        .name-input:focus { outline: none; border-color: var(--accent); background: #fff; }
+        .name-input.error { border-color: var(--danger); background: #FFF5F5; }
+        .name-hint { font-size: 12px; color: var(--danger); margin-top: 6px; display: none; }
+        .name-hint.visible { display: block; }
+
+        .report-head { text-align: center; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+        .report-head h2 { font-size: 22px; margin-bottom: 8px; }
+        .report-greeting { font-size: 14px; color: var(--muted); margin-bottom: 4px; }
+        .report-name { font-size: 26px; font-weight: 800; color: var(--accent); margin-bottom: 8px; }
+        canvas { width: 100%; max-width: 320px; height: auto; margin: 0 auto 24px; display: block; }
+        
+        .share-card {
+            background: linear-gradient(145deg, #F7FAF7 0%, #FAF7F5 60%, #F4F1EB 100%);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 32px 24px;
+            text-align: center;
+            margin-bottom: 40px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        .share-card::before {
+            content: ''; position: absolute; top: -50px; right: -50px; width: 150px; height: 150px;
+            background: radial-gradient(circle, rgba(181,101,74,0.1) 0%, transparent 70%); border-radius: 50%;
+        }
+        .share-brand { font-size: 10px; font-weight: 800; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 24px; }
+        .share-name { font-size: 28px; font-weight: 800; color: var(--text); margin-bottom: 8px; line-height: 1.2; }
+        .share-archetype { font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 20px; }
+        .share-quote { font-size: 15px; font-style: italic; color: var(--text); line-height: 1.6; margin-bottom: 24px; padding: 0 10px; max-width: 90%; margin-left: auto; margin-right: auto; }
+        .share-canvas-container { width: 180px; height: 180px; margin: 0 auto 24px; }
+        .share-footer { font-size: 10px; color: var(--muted); margin-top: 20px; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 16px; letter-spacing: 0.5px; }
+
+        .verdict-box { background: #F8F5F0; border-left: 4px solid var(--accent); padding: 20px; border-radius: 8px; margin-bottom: 32px; }
+        .verdict-box h3 { font-size: 16px; margin-bottom: 8px; color: var(--accent); }
+        .verdict-box p { font-size: 14px; margin: 0; }
+
+        .scenario-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .scenario-title { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        
+        .quote-mirror { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+        .quote-item { background: #FAF7F2; padding: 12px; border-radius: 8px; border-left: 3px solid var(--border); }
+        .quote-item.l1 { border-left-color: var(--sage); }
+        .quote-item.l3 { border-left-color: var(--danger); }
+        .quote-label { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+        .quote-text { font-size: 13px; font-style: italic; color: var(--text); line-height: 1.5; }
+
+        .narrative { margin-bottom: 16px; }
+        .narrative h4 { font-size: 14px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+        .narrative p { font-size: 13px; color: var(--muted); line-height: 1.6; margin: 0; }
+        .narrative.terracotta h4 { color: var(--accent); }
+
+        .action-plan-box { background: var(--text); color: #fff; border-radius: 16px; padding: 24px; margin-top: 32px; }
+        .action-plan-box h3 { font-size: 18px; margin-bottom: 16px; color: #fff; }
+        .action-plan-box p { font-size: 14px; color: #ccc; margin-bottom: 12px; line-height: 1.6; }
+        .action-plan-box ul { padding-left: 20px; margin-bottom: 16px; }
+        .action-plan-box li { font-size: 14px; color: #ccc; margin-bottom: 8px; line-height: 1.5; }
+        .action-plan-box strong { color: #fff; }
+
+        .ai-prompt-box { background: #F8F5F0; border: 1px dashed var(--accent); border-radius: 12px; padding: 20px; margin-top: 20px; }
+        .ai-prompt-box h4 { font-size: 14px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+        .ai-prompt-box p { font-size: 13px; color: var(--text); margin-bottom: 12px; }
+        .prompt-text { background: #fff; padding: 12px; border-radius: 8px; font-size: 12px; color: var(--text); border: 1px solid var(--border); white-space: pre-wrap; font-family: 'Poppins', sans-serif; line-height: 1.5; max-height: 200px; overflow-y: auto; }
+
+        .cta-box { background: var(--accent); color: #fff; padding: 24px; border-radius: 16px; text-align: center; margin-top: 24px; }
+        .cta-box h3 { font-size: 18px; margin-bottom: 12px; }
+        .cta-box p { font-size: 14px; color: #f0e6e2; margin-bottom: 20px; }
+        .cta-box .btn { background: #fff; color: var(--accent); }
+        .disclaimer { font-size: 11px; color: var(--muted); text-align: center; margin-top: 24px; font-style: italic; }
+
+        .cluster-1 { background-color: #F7FAF7; border-left-color: #6B7F66; }
+        .cluster-2 { background-color: #FAF7F5; border-left-color: #B5654A; }
+        .cluster-3 { background-color: #F5F7FA; border-left-color: #5C7C99; }
+        .cluster-4 { background-color: #FAF9F5; border-left-color: #998B5C; }
+        .cluster-5 { background-color: #F8F5FA; border-left-color: #7A5C99; }
+    </style>
+</head>
+<body>
+
+<div class="app" id="app-container">
+    <div class="header">
+        <h1>Ruang Asesmen</h1>
+        <p>Simulasi Interview & Bedah Jawaban</p>
+    </div>
+    <div class="progress"><div class="progress-fill" id="prog"></div></div>
+    <div id="root"></div>
+
+    <div id="report" class="node">
+        <div class="report-head">
+            <div class="q-label">Laporan Bedah Assessor</div>
+            <div class="report-greeting">Halo,</div>
+            <div class="report-name" id="report-user-name">Kandidat</div>
+            <h2>Peta 8 Dimensi & Lintasan Tekananmu</h2>
+            <p style="font-size:13px; color:var(--muted);">Hasil analisis forensik dari 35 titik interaksi.</p>
+        </div>
+
+        <div class="share-card" id="share-card">
+            <div class="share-brand">Ruang Asesmen — Kacamata Senior Assessor</div>
+            <div class="share-name" id="share-name">Nama User</div>
+            <div class="share-archetype" id="share-archetype">Arketype</div>
+            <div class="share-canvas-container">
+                <canvas id="radar-share" width="180" height="180"></canvas>
+            </div>
+            <div class="share-quote" id="share-quote">"Kutipan tamparan assessor akan muncul di sini."</div>
+            <div class="share-footer">Cek pola interviewmu di ksa-rs.terasfounder.id</div>
+        </div>
+
+        <button class="btn btn-viral" onclick="copyViralCaption()">📲 Salin Caption untuk Story / Thread</button>
+
+        <canvas id="radar" width="320" height="320"></canvas>
+        <div id="verdict-container"></div>
+        <div id="scenarios-container"></div>
+        <div id="action-plan-container"></div>
+        <div id="cta-container"></div>
+        <p class="disclaimer">Simulasi ini adalah alat refleksi edukatif berdasarkan pola umum penilaian assessor. Bukan tes psikologi resmi.</p>
+    </div>
+</div>
+
+<script>
+const dims = ["Stabil di Bawah Tekanan","Konsisten & Otentik","Berorientasi Kolaborasi","Tangguh & Berdaya Juang","Kesadaran Diri & Rendah Hati","Adaptif terhadap Perubahan","Solutif & Resourceful","Tangkas Belajar"];
+let scores = {}; dims.forEach(d => scores[d] = 50);
+
+let userName = '';
+let userQuotes = { q1: {l1:'', l3:''}, q2: {l1:'', l3:''}, q3: {l1:'', l3:''}, q4: {l1:'', l3:''}, q5: {l1:'', l3:''} };
+
+function setCluster(c) { document.getElementById('app-container').className = 'app cluster-' + c; }
+
+const nodes = {
+    'intro': { cluster: 1, label: 'Briefing', text: 'Selamat datang di Ruang Asesmen.', desc: 'Ini bukan kuis benar-salah. Ini simulasi tekanan. Kamu akan menghadapi 5 pertanyaan. Pada setiap pilihan, ada follow-up yang semakin menekan. Jawab sesuai instingmu. Tidak ada tombol kembali.', hasNameInput: true },
+    'q1': { cluster: 1, label: 'Pertanyaan 1 dari 5', text: 'Ceritakan secara singkat tentang dirimu, dan mengapa kamu merasa cocok untuk posisi ini?', desc: 'Pilih kalimat yang paling mirip dengan caramu menjawab.', opts: [
+        { t: 'Opsi A', desc: 'Saya lulusan [jurusan] dengan fokus pada [bidang]. Saya pernah memimpin proyek di mana saya belajar mengelola deadline yang ketat dan beradaptasi dengan perubahan data secara cepat.', next: 'q1a', s: {'Kesadaran Diri & Rendah Hati': 10, 'Tangkas Belajar': 5} },
+        { t: 'Opsi B', desc: 'Saya adalah pribadi yang sangat perfeksionis, pekerja keras, dan cepat belajar hal baru. Saya yakin bisa melakukan semua tugas di posisi ini dengan hasil sempurna karena saya selalu berusaha maksimal.', next: 'q1b', s: {'Konsisten & Otentik': -15, 'Kesadaran Diri & Rendah Hati': -10} },
+        { t: 'Opsi C', desc: 'Saya merasa saya orang yang sangat cepat belajar dan punya motivasi tinggi untuk terus berkembang. Saya yakin bisa menyesuaikan diri dengan sangat baik di budaya perusahaan yang dinamis dan menantang ini.', next: 'q1c', s: {'Konsisten & Otentik': -10, 'Tangkas Belajar': -10} }
+    ]},
+    'q1a': { cluster: 1, label: 'Level 2', badge: 'Level 2', text: 'Kamu menyebut batas di bidang X. Jika di posisi ini kamu langsung dituntut menguasai X dalam 1 bulan, apa yang akan kamu lakukan?', opts: [
+        { t: 'Opsi A', desc: 'Saya akan membuat plan belajar intensif dan meminta feedback mingguan untuk memastikan progres saya tetap on track dan sesuai ekspektasi.', next: 'q1a1', s: {'Tangkas Belajar': 10, 'Solutif & Resourceful': 5} },
+        { t: 'Opsi B', desc: 'Saya akan berusaha semaksimal mungkin dan berharap bisa mengejar ketertinggalan sebelum deadline yang diberikan oleh atasan tiba.', next: 'q1a2', s: {'Solutif & Resourceful': -5} }
+    ]},
+    'q1a1': { cluster: 1, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Jujur saja, jawabanmu tadi terdengar sangat rendah hati, tapi assessor bisa mencatat ini sebagai "kurang ambisi". Bagaimana kamu membedakan rendah hati dengan kurang percaya diri?', opts: [
+        { t: 'Opsi A', desc: 'Rendah hati itu mengakui batas, tapi saya punya bukti konkret bahwa saya bisa menutupnya dengan kerja keras dan strategi yang tepat.', next: 'q2', s: {'Kesadaran Diri & Rendah Hati': 10, 'Stabil di Bawah Tekanan': 5} },
+        { t: 'Opsi B', desc: 'Mungkin saya memang kurang percaya diri, tapi saya tipe yang lebih banyak mendengar dan mengamati sebelum akhirnya mengambil tindakan.', next: 'q2', s: {'Stabil di Bawah Tekanan': -5} }
+    ]},
+    'q1a2': { cluster: 1, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Kamu bilang "berharap bisa mengejar". Itu bukan strategi, itu doa. Apa rencana konkritmu jika di minggu ke-3 kamu masih tertinggal jauh?', opts: [
+        { t: 'Opsi A', desc: 'Saya akan minta bantuan rekan yang lebih berpengalaman dan membuat jadwal belajar tambahan di luar jam kerja untuk mengejar ketertinggalan.', next: 'q2', s: {'Solutif & Resourceful': 10, 'Tangkas Belajar': 5} },
+        { t: 'Opsi B', desc: 'Saya akan berterus terang ke atasan bahwa saya butuh waktu lebih dan meminta penyesuaian target agar hasil kerja tetap berkualitas.', next: 'q2', s: {'Kesadaran Diri & Rendah Hati': 5, 'Stabil di Bawah Tekanan': -5} }
+    ]},
+    'q1b': { cluster: 1, label: 'Level 2', badge: 'Level 2', text: 'Kamu bilang bisa melakukan A, B, dan C. Bisa kasih 1 contoh spesifik kapan kamu GAGAL melakukan salah satu dari itu?', opts: [
+        { t: 'Opsi A', desc: 'Saya merasa sulit mengingat kegagalan, tapi kalau dipaksa, mungkin saya pernah kurang teliti dalam manajemen waktu saat proyek besar.', next: 'q1b1', s: {'Kesadaran Diri & Rendah Hati': -5} },
+        { t: 'Opsi B', desc: 'Oke, saya akui saya pernah kewalahan saat project X karena saya tidak mendelegasikan tugas dengan baik kepada anggota tim lainnya.', next: 'q1b2', s: {'Kesadaran Diri & Rendah Hati': 10, 'Konsisten & Otentik': 5} }
+    ]},
+    'q1b1': { cluster: 1, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Dari jawabanmu, tidak ada satu pun kelemahan yang kamu sebut di awal. Ini membuat saya curiga kamu tidak mengenal dirimu sendiri, atau sedang menghafal. Mana yang benar?', opts: [
+        { t: 'Opsi A', desc: 'Saya hanya ingin menampilkan sisi terbaik saya untuk posisi ini karena saya tahu persaingannya sangat ketat dan berat.', next: 'q2', s: {'Konsisten & Otentik': -10, 'Stabil di Bawah Tekanan': -5} },
+        { t: 'Opsi B', desc: 'Saya sadar itu kesalahan saya. Saya terlalu fokus menjual diri di awal dan lupa menunjukkan sisi manusiawi saya.', next: 'q2', s: {'Kesadaran Diri & Rendah Hati': 10, 'Konsisten & Otentik': 5} }
+    ]},
+    'q1b2': { cluster: 1, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Kamu mengakui pernah kewalahan. Tapi kenapa kamu tidak menyebut ini di awal saat ditanya tentang kelebihanmu? Apa yang kamu sembunyikan?', opts: [
+        { t: 'Opsi A', desc: 'Saya takut kalau menyebutkan kelemahan di awal, saya akan langsung dicoret dari proses seleksi ini.', next: 'q2', s: {'Stabil di Bawah Tekanan': -10, 'Kesadaran Diri & Rendah Hati': -5} },
+        { t: 'Opsi B', desc: 'Saya rasa konteksnya berbeda. Saat ditanya kelebihan, saya fokus pada kekuatan. Saat ditanya kegagalan, baru saya buka sisi lain.', next: 'q2', s: {'Kesadaran Diri & Rendah Hati': 10, 'Konsisten & Otentik': 5} }
+    ]},
+    'q1c': { cluster: 1, label: 'Level 2', badge: 'Level 2', text: '"Cepat belajar" itu klaim yang sering saya dengar. Apa bukti konkretnya dalam 3 bulan terakhir?', opts: [
+        { t: 'Opsi A', desc: 'Saya belajar software X untuk tugas kuliah dalam waktu satu minggu dan langsung menerapkannya untuk analisis data akhir.', next: 'q1c1', s: {'Tangkas Belajar': 5} },
+        { t: 'Opsi B', desc: 'Saya banyak membaca artikel dan menonton video tutorial di YouTube untuk menambah wawasan saya tentang industri ini.', next: 'q1c2', s: {'Solutif & Resourceful': -10} }
+    ]},
+    'q1c1': { cluster: 1, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Jika "cepat belajar" hanya slogan di CV-mu, kenapa saya harus percaya kamu berbeda dari 100 kandidat lain yang bilang hal sama?', opts: [
+        { t: 'Opsi A', desc: 'Karena saya benar-benar punya motivasi yang tinggi dan saya yakin bisa membuktikan diri saya setelah diterima bekerja.', next: 'q2', s: {'Konsisten & Otentik': -10} },
+        { t: 'Opsi B', desc: 'Anda benar, itu hanya slogan. Bukti nyatanya ada di portofolio dan hasil kerja nyata yang sudah saya lampirkan.', next: 'q2', s: {'Kesadaran Diri & Rendah Hati': 10, 'Konsisten & Otentik': 5} }
+    ]},
+    'q1c2': { cluster: 1, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Menonton tutorial YouTube bukan bukti belajar. Itu konsumsi pasif. Apa yang sudah kamu PRODUKSI dari semua tontonan itu?', opts: [
+        { t: 'Opsi A', desc: 'Saya belum memproduksi apa-apa secara konkret, tapi saya merasa wawasan saya sudah bertambah dan siap diterapkan.', next: 'q2', s: {'Solutif & Resourceful': -10, 'Tangkas Belajar': -5} },
+        { t: 'Opsi B', desc: 'Dari tutorial itu, saya sudah membuat 2 proyek latihan pribadi yang bisa saya tunjukkan sebagai bukti penerapan.', next: 'q2', s: {'Tangkas Belajar': 10, 'Solutif & Resourceful': 5} }
+    ]},
+    'q2': { cluster: 2, label: 'Pertanyaan 2 dari 5', text: 'Ceritakan pengalaman di mana kamu harus bekerja sama dengan satu orang yang sulit diajak bekerja sama atau memiliki gaya kerja sangat berbeda.', desc: 'Pilih kalimat yang paling mirip dengan caramu menjawab.', opts: [
+        { t: 'Opsi A', desc: 'Saya pernah bekerja dengan rekan yang sangat sulit diajak diskusi dan sering mengabaikan pesan grup. Saya sudah mencoba menegurnya beberapa kali, tapi dia tetap tidak berubah dan menghambat progres kami.', next: 'q2a', s: {'Berorientasi Kolaborasi': -15, 'Tangguh & Berdaya Juang': -10} },
+        { t: 'Opsi B', desc: 'Saya pernah berkolaborasi dengan rekan yang memiliki gaya kerja sangat berbeda. Saya mengajaknya ngobrol privat untuk memahami preferensinya, lalu kami sepakat membagi tugas sesuai kekuatan masing-masing.', next: 'q2b', s: {'Berorientasi Kolaborasi': 10, 'Adaptif terhadap Perubahan': 10} },
+        { t: 'Opsi C', desc: 'Saya biasanya lebih memilih untuk diam dan fokus mengerjakan bagian saya sendiri saja. Saya merasa berdebat dengan orang yang sulit diajak kerja sama hanya akan membuang waktu dan membuat suasana tidak nyaman.', next: 'q2c', s: {'Berorientasi Kolaborasi': -15, 'Adaptif terhadap Perubahan': -10} }
+    ]},
+    'q2a': { cluster: 2, label: 'Level 2', badge: 'Level 2', text: 'Kamu banyak menjelaskan kesalahan dia. Apa peranmu dalam membuat komunikasi dengan dia jadi macet?', opts: [
+        { t: 'Opsi A', desc: 'Mungkin saya yang kurang sabar menghadapinya dan terlalu memaksakan gaya kerja saya kepadanya tanpa mencoba memahami dia.', next: 'q2a1', s: {'Kesadaran Diri & Rendah Hati': 5} },
+        { t: 'Opsi B', desc: 'Saya merasa saya sudah mencoba segala cara, tapi dia yang tidak mau berubah dan tidak profesional dalam bekerja.', next: 'q2a2', s: {'Kesadaran Diri & Rendah Hati': -10} }
+    ]},
+    'q2a1': { cluster: 2, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Kamu mengakui kurang sabar. Tapi kenapa kamu tidak mencoba pendekatan yang berbeda sebelum akhirnya frustrasi?', opts: [
+        { t: 'Opsi A', desc: 'Saya sudah mencoba berbagai pendekatan, tapi sepertinya gaya komunikasinya memang tidak cocok dengan saya.', next: 'q3', s: {'Adaptif terhadap Perubahan': -5, 'Solutif & Resourceful': -5} },
+        { t: 'Opsi B', desc: 'Saya seharusnya lebih kreatif dalam mencari cara berkomunikasi yang cocok untuk dia, bukan hanya memaksakan cara saya.', next: 'q3', s: {'Kesadaran Diri & Rendah Hati': 10, 'Adaptif terhadap Perubahan': 5} }
+    ]},
+    'q2a2': { cluster: 2, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Dari ceritamu, kamu terlihat lebih fokus menyalahkan dia daripada mencari solusi. Di perusahaan kami, ini disebut mentalitas korban. Apa komentarmu?', opts: [
+        { t: 'Opsi A', desc: 'Saya tidak bermaksud menyalahkan, saya hanya menceritakan fakta yang terjadi dan bagaimana dia menghambat pekerjaan tim.', next: 'q3', s: {'Tangguh & Berdaya Juang': -10, 'Stabil di Bawah Tekanan': -5} },
+        { t: 'Opsi B', desc: 'Saya terima masukan itu. Saya seharusnya lebih fokus pada solusi dan apa yang bisa saya kontrol, bukan pada perilakunya.', next: 'q3', s: {'Kesadaran Diri & Rendah Hati': 10, 'Tangguh & Berdaya Juang': 5} }
+    ]},
+    'q2b': { cluster: 2, label: 'Level 2', badge: 'Level 2', text: 'Kamu bilang kamu menyesuaikan gaya komunikasi. Tapi apakah kamu pernah mempertanyakan apakah gayamu sendiri yang perlu diubah?', opts: [
+        { t: 'Opsi A', desc: 'Saya juga merefleksikan cara kerja saya sendiri dan menyadari bahwa saya perlu lebih fleksibel dalam menerima masukan dari orang lain.', next: 'q2b1', s: {'Kesadaran Diri & Rendah Hati': 10} },
+        { t: 'Opsi B', desc: 'Saya merasa cara saya sudah cukup efektif dan tidak perlu diubah karena target proyek kami tetap tercapai dengan baik.', next: 'q2b2', s: {'Kesadaran Diri & Rendah Hati': -5} }
+    ]},
+    'q2b1': { cluster: 2, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Kamu terdengar sangat reflektif. Tapi apakah refleksi itu benar-benar mengubah perilaku, atau hanya terdengar bagus di interview?', opts: [
+        { t: 'Opsi A', desc: 'Refleksi itu benar-benar mengubah cara saya bekerja. Saya sekarang lebih sering meminta feedback sebelum mengambil keputusan penting.', next: 'q3', s: {'Kesadaran Diri & Rendah Hati': 10, 'Tangkas Belajar': 5} },
+        { t: 'Opsi B', desc: 'Saya berusaha mengubah perilaku, tapi terkadang saya kembali ke pola lama saat di bawah tekanan.', next: 'q3', s: {'Kesadaran Diri & Rendah Hati': 5, 'Stabil di Bawah Tekanan': -5} }
+    ]},
+    'q2b2': { cluster: 2, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Jujur saja, terdengar seperti kamu terlalu mengalah. Assessor bisa mencatat ini sebagai "kurang tegas". Bagaimana kamu memastikan kamu tidak kehilangan standar hanya untuk menjaga hubungan?', opts: [
+        { t: 'Opsi A', desc: 'Saya mengalah di cara komunikasi, tapi saya tetap tegas dan tidak kompromi pada kualitas hasil akhir yang harus dicapai.', next: 'q3', s: {'Berorientasi Kolaborasi': 5, 'Stabil di Bawah Tekanan': 5} },
+        { t: 'Opsi B', desc: 'Mungkin saya memang terlalu menghindari konflik dan kurang berani menegakkan standar yang sudah disepakati bersama.', next: 'q3', s: {'Stabil di Bawah Tekanan': -5} }
+    ]},
+    'q2c': { cluster: 2, label: 'Level 2', badge: 'Level 2', text: 'Jika kamu diam, bagaimana tugas tim bisa selesai dengan baik? Apa yang sebenarnya kamu takutkan saat menghadapi dia?', opts: [
+        { t: 'Opsi A', desc: 'Saya takut konfliknya malah memperburuk suasana tim dan membuat semua orang tidak nyaman bekerja sama dalam satu proyek.', next: 'q2c1', s: {'Stabil di Bawah Tekanan': -5} },
+        { t: 'Opsi B', desc: 'Saya tidak takut, saya hanya merasa berinteraksi dengannya tidak efektif dan lebih baik saya fokus pada tugas saya.', next: 'q2c2', s: {'Solutif & Resourceful': -5} }
+    ]},
+    'q2c1': { cluster: 2, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Menghindari konflik bukan menyelesaikan konflik. Ini sinyal bahwa kamu tidak nyaman dengan dinamika tim. Benar tidak?', opts: [
+        { t: 'Opsi A', desc: 'Mungkin benar, saya memang lebih suka kerja sendiri dan kurang nyaman dengan dinamika tim yang penuh konflik.', next: 'q3', s: {'Berorientasi Kolaborasi': -10} },
+        { t: 'Opsi B', desc: 'Saya tidak nyaman, tapi saya sadar itu adalah hal yang harus saya latih dan saya perbaiki ke depannya.', next: 'q3', s: {'Kesadaran Diri & Rendah Hati': 10, 'Tangkas Belajar': 5} }
+    ]},
+    'q2c2': { cluster: 2, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Fokus pada tugas sendiri tapi mengabaikan dinamika tim adalah cara cepat untuk dicap "bukan tim player". Bagaimana kamu membantah ini?', opts: [
+        { t: 'Opsi A', desc: 'Saya rasa hasil kerja individu yang baik tetap berkontribusi pada tim, meskipun saya tidak terlibat dalam dinamika sosialnya.', next: 'q3', s: {'Berorientasi Kolaborasi': -10, 'Kesadaran Diri & Rendah Hati': -5} },
+        { t: 'Opsi B', desc: 'Saya sadar itu kesalahan saya. Saya seharusnya lebih proaktif dalam berkomunikasi meskipun tidak nyaman.', next: 'q3', s: {'Kesadaran Diri & Rendah Hati': 10, 'Berorientasi Kolaborasi': 5} }
+    ]},
+    'q3': { cluster: 3, label: 'Pertanyaan 3 dari 5', text: 'Ceritakan waktu di mana kamu membuat kesalahan besar atau gagal mencapai target yang penting. Apa peranmu dalam kegagalan itu?', desc: 'Pilih kalimat yang paling mirip dengan caramu menjawab.', opts: [
+        { t: 'Opsi A', desc: 'Kegagalan terbesar saya adalah karena saya terlalu perfeksionis sehingga terkadang bekerja terlalu lama. Namun, saya sudah belajar untuk mengatur waktu dengan lebih baik agar tidak merugikan tim.', next: 'q3a', s: {'Konsisten & Otentik': -15, 'Kesadaran Diri & Rendah Hati': -10} },
+        { t: 'Opsi B', desc: 'Saya pernah gagal mencapai target karena tim saya sangat lambat merespons pesan dan tidak kooperatif. Saya sudah mengingatkan mereka berkali-kali di grup, tapi mereka tidak peduli.', next: 'q3b', s: {'Tangguh & Berdaya Juang': -15, 'Kesadaran Diri & Rendah Hati': -10} },
+        { t: 'Opsi C', desc: 'Saya pernah gagal memimpin acara kampus karena saya tidak mendelegasikan tugas dengan baik. Saya sadar itu kesalahan manajemen saya, jadi saya buat sistem check-in harian dan hasilnya acara berjalan lancar.', next: 'q3c', s: {'Kesadaran Diri & Rendah Hati': 15, 'Tangguh & Berdaya Juang': 10} }
+    ]},
+    'q3a': { cluster: 3, label: 'Level 2', badge: 'Level 2', text: 'Itu bukan kegagalan, itu klise. Ceritakan satu momen di mana perfeksionismu benar-benar merugikan orang lain.', opts: [
+        { t: 'Opsi A', desc: 'Saya pernah membuat rekan menunggu karena saya mengecek ulang terus-menerus sehingga deadline mereka ikut molor dan mereka harus lembur.', next: 'q3a1', s: {'Kesadaran Diri & Rendah Hati': 5} },
+        { t: 'Opsi B', desc: 'Saya merasa tidak ingat ada yang dirugikan secara langsung karena saya selalu memastikan tugas saya sendiri selesai tepat waktu.', next: 'q3a2', s: {'Kesadaran Diri & Rendah Hati': -10} }
+    ]},
+    'q3a1': { cluster: 3, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Kamu akhirnya mengakui merugikan rekan. Tapi kenapa kamu baru mengakuinya setelah saya tekan? Apa yang kamu sembunyikan?', opts: [
+        { t: 'Opsi A', desc: 'Saya hanya ingin terlihat profesional di depan Anda dan tidak ingin menceritakan aib atau kegagalan saya yang memalukan.', next: 'q4', s: {'Konsisten & Otentik': -10} },
+        { t: 'Opsi B', desc: 'Saya takut dinilai buruk jika menceritakan kegagalan yang nyata, tapi saya sadar saya harus lebih berani jujur.', next: 'q4', s: {'Kesadaran Diri & Rendah Hati': 5, 'Stabil di Bawah Tekanan': -5} }
+    ]},
+    'q3a2': { cluster: 3, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Kamu bilang tidak ada yang dirugikan. Tapi perfeksionisme yang membuat kamu bekerja terlalu lama pasti berdampak pada tim. Kamu tidak sadar atau tidak peduli?', opts: [
+        { t: 'Opsi A', desc: 'Saya rasa saya tidak terlalu peduli dengan dampak pada tim karena saya fokus pada kualitas kerja saya sendiri.', next: 'q4', s: {'Berorientasi Kolaborasi': -10, 'Kesadaran Diri & Rendah Hati': -10} },
+        { t: 'Opsi B', desc: 'Saya sadar sekarang bahwa perfeksionisme saya bisa berdampak pada tim. Saya perlu lebih memperhatikan hal itu.', next: 'q4', s: {'Kesadaran Diri & Rendah Hati': 10, 'Berorientasi Kolaborasi': 5} }
+    ]},
+    'q3b': { cluster: 3, label: 'Level 2', badge: 'Level 2', text: 'Kamu bilang tim yang lambat. Sebagai penanggung jawab, apa yang KAMU lakukan di minggu pertama saat melihat mereka lambat?', opts: [
+        { t: 'Opsi A', desc: 'Saya merasa sudah cukup dengan mengingatkan mereka di grup dan men-tag nama mereka agar mereka sadar dan segera mengerjakan.', next: 'q3b1', s: {'Solutif & Resourceful': -5} },
+        { t: 'Opsi B', desc: 'Saya seharusnya mengajak mereka bicara tatap muka lebih awal untuk mencari tahu kendala mereka, bukan hanya menagih di grup.', next: 'q3b2', s: {'Kesadaran Diri & Rendah Hati': 10} }
+    ]},
+    'q3b1': { cluster: 3, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Men-tag di grup itu bukan kepemimpinan, itu penagihan. Kenapa kamu tidak mencoba pendekatan yang lebih personal?', opts: [
+        { t: 'Opsi A', desc: 'Saya rasa men-tag di grup sudah cukup karena itu cara komunikasi yang paling efisien dan semua orang bisa melihat.', next: 'q4', s: {'Solutif & Resourceful': -10, 'Berorientasi Kolaborasi': -5} },
+        { t: 'Opsi B', desc: 'Saya seharusnya lebih personal dan mencari tahu kendala mereka secara langsung, bukan hanya menagih di grup.', next: 'q4', s: {'Kesadaran Diri & Rendah Hati': 10, 'Solutif & Resourceful': 5} }
+    ]},
+    'q3b2': { cluster: 3, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Dari ceritamu, kamu terlihat seperti penonton yang mengeluh, bukan pemimpin yang bertindak. Bagaimana kamu membantah catatan ini?', opts: [
+        { t: 'Opsi A', desc: 'Saya bukan pemimpin di situ, saya hanya anggota biasa jadi saya tidak punya wewenang untuk memaksa mereka bekerja.', next: 'q4', s: {'Tangguh & Berdaya Juang': -10} },
+        { t: 'Opsi B', desc: 'Catatan itu adil. Saya memang pasif di awal dan hanya mengeluh tanpa mencoba mengambil inisiatif untuk memperbaiki situasi.', next: 'q4', s: {'Kesadaran Diri & Rendah Hati': 10, 'Tangguh & Berdaya Juang': 5} }
+    ]},
+    'q3c': { cluster: 3, label: 'Level 2', badge: 'Level 2', text: 'Kamu mengakui itu kesalahanmu. Tapi apakah perubahan yang kamu buat itu benar-benar berjalan mulus, atau ada yang masih gagal setelahnya?', opts: [
+        { t: 'Opsi A', desc: 'Ada yang masih gagal di awal, jadi saya harus menyesuaikan lagi sistemnya dan meminta feedback langsung dari anggota tim.', next: 'q3c1', s: {'Konsisten & Otentik': 10, 'Tangkas Belajar': 5} },
+        { t: 'Opsi B', desc: 'Semuanya berjalan mulus setelah itu dan tidak ada masalah lagi sampai proyek tersebut selesai dengan sempurna.', next: 'q3c2', s: {'Konsisten & Otentik': -5} }
+    ]},
+    'q3c1': { cluster: 3, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Kamu mengakui ada yang masih gagal. Tapi kenapa kamu tidak menyebut ini di awal? Apakah kamu hanya menceritakan versi yang bagus?', opts: [
+        { t: 'Opsi A', desc: 'Saya rasa menceritakan versi yang bagus lebih penting untuk menunjukkan bahwa saya bisa belajar dari kegagalan.', next: 'q4', s: {'Konsisten & Otentik': -10} },
+        { t: 'Opsi B', desc: 'Saya seharusnya lebih jujur tentang proses yang tidak mulus. Kegagalan itu bagian dari pembelajaran yang nyata.', next: 'q4', s: {'Konsisten & Otentik': 10, 'Kesadaran Diri & Rendah Hati': 5} }
+    ]},
+    'q3c2': { cluster: 3, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Semuanya berjalan mulus? Itu terdengar terlalu sempurna. Yakin tidak ada yang gagal setelah kamu buat sistem check-in?', opts: [
+        { t: 'Opsi A', desc: 'Saya yakin semuanya berjalan mulus karena sistem yang saya buat sudah sangat sempurna dan tidak ada celah kegagalan.', next: 'q4', s: {'Konsisten & Otentik': -10, 'Kesadaran Diri & Rendah Hati': -5} },
+        { t: 'Opsi B', desc: 'Sebenarnya masih ada yang terlambat, tapi secara keseluruhan sistem itu membantu mengurangi kegagalan yang lebih besar.', next: 'q4', s: {'Konsisten & Otentik': 10, 'Kesadaran Diri & Rendah Hati': 5} }
+    ]},
+    'q4': { cluster: 4, label: 'Pertanyaan 4 dari 5', text: 'Ceritakan situasi di mana kamu diberi tugas atau menghadapi masalah yang tidak memiliki SOP, instruksi jelas, atau atasanmu tidak bisa membantu.', desc: 'Pilih kalimat yang paling mirip dengan caramu menjawab.', opts: [
+        { t: 'Opsi A', desc: 'Saat atasan tidak memberi instruksi jelas, saya langsung meriset referensi terbaik, membuat draft solusi sederhana, lalu memvalidasikannya ke atasan. Jika atasan sibuk, saya putuskan berdasarkan data terbaik.', next: 'q4a', s: {'Solutif & Resourceful': 10, 'Adaptif terhadap Perubahan': 10} },
+        { t: 'Opsi B', desc: 'Saya biasanya akan menunggu instruksi lebih lanjut dari atasan atau bertanya kepada teman senior yang lebih berpengalaman. Saya merasa lebih aman untuk tidak melakukan apa-apa sebelum ada arahan yang jelas.', next: 'q4b', s: {'Solutif & Resourceful': -15, 'Adaptif terhadap Perubahan': -10} },
+        { t: 'Opsi C', desc: 'Saya langsung mengerjakan tugas tersebut sesuai insting saya tanpa bertanya kepada siapa pun. Saya merasa bertanya hanya akan membuang waktu, dan saya yakin insting saya biasanya benar.', next: 'q4c', s: {'Berorientasi Kolaborasi': -10, 'Adaptif terhadap Perubahan': -5} }
+    ]},
+    'q4a': { cluster: 4, label: 'Level 2', badge: 'Level 2', text: 'Kamu validasi ke atasan. Bagaimana jika atasanmu juga tidak tahu atau sedang sibuk? Apa yang kamu lakukan?', opts: [
+        { t: 'Opsi A', desc: 'Saya memutuskan sendiri berdasarkan data terbaik yang saya punya dan langsung eksekusi agar proyek tidak terhambat.', next: 'q4a1', s: {'Solutif & Resourceful': 10, 'Stabil di Bawah Tekanan': 5} },
+        { t: 'Opsi B', desc: 'Saya merasa lebih baik menunda dulu sampai atasan ada waktu dan bisa memberikan arahan yang pasti.', next: 'q4a2', s: {'Solutif & Resourceful': -10} }
+    ]},
+    'q4a1': { cluster: 4, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Kamu memutuskan sendiri tanpa validasi. Bagaimana jika keputusanmu salah dan merugikan perusahaan? Siapa yang bertanggung jawab?', opts: [
+        { t: 'Opsi A', desc: 'Saya siap bertanggung jawab penuh atas keputusan saya karena saya sudah mempertimbangkan data terbaik yang tersedia.', next: 'q5', s: {'Tangguh & Berdaya Juang': 10, 'Stabil di Bawah Tekanan': 5} },
+        { t: 'Opsi B', desc: 'Saya rasa atasan yang seharusnya bertanggung jawab karena dia yang tidak memberi arahan jelas sejak awal.', next: 'q5', s: {'Tangguh & Berdaya Juang': -10, 'Kesadaran Diri & Rendah Hati': -5} }
+    ]},
+    'q4a2': { cluster: 4, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Terdengar seperti kamu sangat butuh validasi. Assessor bisa mencatat ini sebagai "kurang mandiri". Bagaimana kamu membedakan antara validasi yang perlu dengan ketergantungan?', opts: [
+        { t: 'Opsi A', desc: 'Saya validasi hanya untuk risiko tinggi, sisanya saya putuskan sendiri karena saya yakin dengan analisis yang sudah saya buat.', next: 'q5', s: {'Solutif & Resourceful': 5, 'Kesadaran Diri & Rendah Hati': 5} },
+        { t: 'Opsi B', desc: 'Saya merasa memang lebih suka bermain aman dan takut membuat keputusan yang salah tanpa persetujuan atasan.', next: 'q5', s: {'Stabil di Bawah Tekanan': -5} }
+    ]},
+    'q4b': { cluster: 4, label: 'Level 2', badge: 'Level 2', text: 'Sambil menunggu, apa yang kamu lakukan? Atau kamu benar-benar diam?', opts: [
+        { t: 'Opsi A', desc: 'Saya merasa cukup diam sambil mengerjakan tugas lain yang lebih jelas instruksinya dan menunggu giliran saya.', next: 'q4b1', s: {'Solutif & Resourceful': -5} },
+        { t: 'Opsi B', desc: 'Saya merasa perlu mencoba mencari referensi di internet atau mempelajari studi kasus serupa untuk persiapan.', next: 'q4b2', s: {'Solutif & Resourceful': 5} }
+    ]},
+    'q4b1': { cluster: 4, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Menunggu instruksi di lingkungan tanpa SOP adalah cara tercepat untuk dicoret. Ini menunjukkan kamu tidak bisa bekerja tanpa digandeng. Setuju?', opts: [
+        { t: 'Opsi A', desc: 'Saya merasa setuju, itu memang kelemahan saya dan saya perlu belajar untuk lebih proaktif ke depannya.', next: 'q5', s: {'Kesadaran Diri & Rendah Hati': 10, 'Tangkas Belajar': 5} },
+        { t: 'Opsi B', desc: 'Saya merasa itu bukan kesalahan saya jika tidak diinstruksikan dan sistem perusahaannya yang tidak jelas.', next: 'q5', s: {'Tangguh & Berdaya Juang': -10, 'Kesadaran Diri & Rendah Hati': -10} }
+    ]},
+    'q4b2': { cluster: 4, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Mencari referensi itu bagus, tapi itu belum eksekusi. Kapan kamu mulai bertindak tanpa menunggu arahan lengkap?', opts: [
+        { t: 'Opsi A', desc: 'Saya rasa saya perlu lebih berani mengambil tindakan meskipun instruksi belum lengkap, daripada hanya mempersiapkan diri.', next: 'q5', s: {'Solutif & Resourceful': 10, 'Adaptif terhadap Perubahan': 5} },
+        { t: 'Opsi B', desc: 'Saya merasa lebih nyaman mempersiapkan diri dengan matang sebelum bertindak agar tidak membuat kesalahan.', next: 'q5', s: {'Adaptif terhadap Perubahan': -5, 'Solutif & Resourceful': -5} }
+    ]},
+    'q4c': { cluster: 4, label: 'Level 2', badge: 'Level 2', text: 'Tanpa tanya siapa-siapa? Bagaimana kamu tahu arahmu benar? Apa yang terjadi jika instingmu salah?', opts: [
+        { t: 'Opsi A', desc: 'Saya merasa akan memperbaikinya jika ternyata salah dan saya siap bertanggung jawab atas konsekuensi dari keputusan saya.', next: 'q4c1', s: {'Tangguh & Berdaya Juang': 5} },
+        { t: 'Opsi B', desc: 'Saya merasa insting saya biasanya benar dan saya tidak suka direpotkan dengan prosedur yang berbelit-belit.', next: 'q4c2', s: {'Kesadaran Diri & Rendah Hati': -10} }
+    ]},
+    'q4c1': { cluster: 4, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Kerjaanmu mungkin selesai, tapi kamu bisa saja merusak sistem yang sudah ada. Ini sinyal "sulit diatur". Bagaimana kamu menjawab tuduhan ini?', opts: [
+        { t: 'Opsi A', desc: 'Saya merasa akan lebih memperhatikan sistem lain di masa depan dan berkoordinasi dengan tim sebelum mengambil tindakan.', next: 'q5', s: {'Berorientasi Kolaborasi': 5, 'Kesadaran Diri & Rendah Hati': 5} },
+        { t: 'Opsi B', desc: 'Saya merasa hasil akhir yang penting, bukan sistemnya, dan perusahaan harusnya menghargai orang yang berorientasi hasil.', next: 'q5', s: {'Berorientasi Kolaborasi': -10, 'Adaptif terhadap Perubahan': -5} }
+    ]},
+    'q4c2': { cluster: 4, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Kamu tidak suka prosedur berbelit? Di perusahaan besar, prosedur ada untuk alasan yang valid. Apakah kamu sulit mengikuti aturan?', opts: [
+        { t: 'Opsi A', desc: 'Saya rasa prosedur yang tidak efisien hanya menghambat produktivitas dan seharusnya bisa disederhanakan.', next: 'q5', s: {'Adaptif terhadap Perubahan': -10, 'Kesadaran Diri & Rendah Hati': -5} },
+        { t: 'Opsi B', desc: 'Saya mengerti prosedur penting, tapi saya rasa ada cara yang lebih efisien untuk mencapai hasil yang sama.', next: 'q5', s: {'Adaptif terhadap Perubahan': 5, 'Kesadaran Diri & Rendah Hati': 5} }
+    ]},
+    'q5': { cluster: 5, label: 'Pertanyaan 5 dari 5', text: 'Bayangkan kamu sudah bekerja keras berminggu-minggu. Tiba-tiba, di depan seluruh tim, atasan mengkritik hasil kerjamu secara tajam dan bilang itu "tidak sesuai ekspektasi". Apa yang kamu rasakan dan katakan saat itu juga?', desc: 'Pilih respons paling jujur.', opts: [
+        { t: 'Opsi A', desc: 'Saya akan langsung menjelaskan data dan fakta bahwa saya sudah bekerja sangat keras berminggu-minggu. Saya akan membela diri di depan tim karena saya merasa kritik atasan tersebut sangat tidak adil.', next: 'q5a', s: {'Stabil di Bawah Tekanan': -15, 'Konsisten & Otentik': -5} },
+        { t: 'Opsi B', desc: 'Saya akan merasa kaget dan sakit hati, tapi saya diam sejenak. Lalu saya bilang, "Baik Pak, saya catat. Boleh saya diskusi detailnya setelah rapat ini?" Saya akan cari data untuk memperbaikinya.', next: 'q5b', s: {'Stabil di Bawah Tekanan': 15, 'Konsisten & Otentik': 10} },
+        { t: 'Opsi C', desc: 'Saya akan diam saja, merasa sangat buruk, dan kehilangan motivasi untuk bekerja. Dalam hati saya mungkin langsung mempertimbangkan untuk mengundurkan diri karena saya merasa tidak cocok dengan tekanan ini.', next: 'q5c', s: {'Stabil di Bawah Tekanan': -15, 'Tangguh & Berdaya Juang': -15} }
+    ]},
+    'q5a': { cluster: 5, label: 'Level 2', badge: 'Level 2', text: 'Menjelaskan data di depan umum saat atasan emosi biasanya hanya membuat situasi makin panas. Kenapa kamu memilih membela diri di saat itu?', opts: [
+        { t: 'Opsi A', desc: 'Saya merasa tidak dihargai atas kerja keras saya dan saya ingin tim tahu bahwa saya sudah melakukan yang terbaik.', next: 'q5a1', s: {'Stabil di Bawah Tekanan': -5} },
+        { t: 'Opsi B', desc: 'Saya merasa seharusnya menunggu momen yang lebih tepat dan tidak menanggapi kritik tersebut secara emosional di depan umum.', next: 'q5a2', s: {'Kesadaran Diri & Rendah Hati': 10} }
+    ]},
+    'q5a1': { cluster: 5, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Kamu merasa tidak dihargai. Tapi apakah membela diri di depan tim itu membuat kamu dihargai, atau justru terlihat tidak profesional?', opts: [
+        { t: 'Opsi A', desc: 'Saya rasa membela diri dengan data dan fakta itu profesional, meskipun suasananya tidak nyaman bagi semua orang.', next: 'end', s: {'Stabil di Bawah Tekanan': -5, 'Kesadaran Diri & Rendah Hati': -5} },
+        { t: 'Opsi B', desc: 'Saya sadar sekarang bahwa membela diri di depan tim itu tidak profesional. Saya seharusnya meminta diskusi privat.', next: 'end', s: {'Kesadaran Diri & Rendah Hati': 10, 'Stabil di Bawah Tekanan': 5} }
+    ]},
+    'q5a2': { cluster: 5, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Assessor mencatat ini sebagai "tidak bisa menerima kritik" dan "emosional". Kamu lebih memilih ego daripada dinamika tim. Bagaimana kamu menanggapi ini?', opts: [
+        { t: 'Opsi A', desc: 'Saya merasa tidak setuju dengan penilaian itu karena saya hanya membela fakta dan data yang sudah saya kerjakan.', next: 'end', s: {'Kesadaran Diri & Rendah Hati': -10, 'Stabil di Bawah Tekanan': -10} },
+        { t: 'Opsi B', desc: 'Saya merasa itu valid. Saya perlu belajar memisahkan ego dan profesionalisme serta menerima kritik dengan lebih dewasa.', next: 'end', s: {'Kesadaran Diri & Rendah Hati': 10, 'Tangkas Belajar': 10} }
+    ]},
+    'q5b': { cluster: 5, label: 'Level 2', badge: 'Level 2', text: 'Kamu bilang sakit hati. Apakah rasa sakit hati itu mempengaruhi kualitas kerjamu di hari-hari berikutnya?', opts: [
+        { t: 'Opsi A', desc: 'Saya merasa sedikit terpengaruh, tapi saya bisa cepat pulih dan kembali fokus pada target yang harus saya capai.', next: 'q5b1', s: {'Tangguh & Berdaya Juang': 5} },
+        { t: 'Opsi B', desc: 'Saya merasa ya, saya jadi kurang fokus dan butuh waktu beberapa hari untuk benar-benar bisa bekerja normal lagi.', next: 'q5b2', s: {'Tangguh & Berdaya Juang': -5} }
+    ]},
+    'q5b1': { cluster: 5, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Kamu bilang bisa cepat pulih. Tapi apakah "cepat pulih" itu benar-benar terjadi, atau kamu hanya menekan emosi dan pura-pura baik-baik saja?', opts: [
+        { t: 'Opsi A', desc: 'Saya rasa saya benar-benar bisa cepat pulih karena saya fokus pada solusi, bukan pada perasaan sakit hati.', next: 'end', s: {'Tangguh & Berdaya Juang': 10, 'Stabil di Bawah Tekanan': 5} },
+        { t: 'Opsi B', desc: 'Sebenarnya saya menekan emosi dan pura-pura baik-baik saja, tapi di dalam hati saya masih merasa sakit.', next: 'end', s: {'Konsisten & Otentik': -5, 'Stabil di Bawah Tekanan': -5} }
+    ]},
+    'q5b2': { cluster: 5, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Jujur saja, menahan emosi di rapat itu bagus. Tapi jika setelah rapat kamu tetap merasa diperlakukan tidak adil, apakah kamu akan diam saja atau mencari cara lain? Jangan jawab yang ideal.', opts: [
+        { t: 'Opsi A', desc: 'Saya akan mencari data untuk mendiskusikannya secara privat dengan atasan agar tidak ada kesalahpahaman yang berlanjut.', next: 'end', s: {'Solutif & Resourceful': 10, 'Stabil di Bawah Tekanan': 5} },
+        { t: 'Opsi B', desc: 'Saya akan diam saja dan menerima perlakuan itu karena saya tidak ingin membuat masalah di tempat kerja.', next: 'end', s: {'Tangguh & Berdaya Juang': -5} }
+    ]},
+    'q5c': { cluster: 5, label: 'Level 2', badge: 'Level 2', text: 'Jika kamu langsung ingin resign karena 1 kritik, bagaimana kamu bisa bertahan di perusahaan ini yang tekanannya jauh lebih tinggi?', opts: [
+        { t: 'Opsi A', desc: 'Saya merasa mungkin saya memang tidak cocok di lingkungan tinggi tekanan dan saya perlu mencari tempat yang lebih suportif.', next: 'q5c1', s: {'Tangguh & Berdaya Juang': -5} },
+        { t: 'Opsi B', desc: 'Saya merasa perlu melatih ketahanan mental saya karena saya sadar dunia kerja memang penuh dengan tekanan dan kritik.', next: 'q5c2', s: {'Kesadaran Diri & Rendah Hati': 10, 'Tangkas Belajar': 5} }
+    ]},
+    'q5c1': { cluster: 5, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Mencari tempat yang lebih suportif? Di dunia kerja nyata, tidak ada tempat yang 100% suportif. Apa rencanamu?', opts: [
+        { t: 'Opsi A', desc: 'Saya rasa saya akan terus mencari perusahaan yang lebih cocok dengan gaya kerja saya sampai menemukannya.', next: 'end', s: {'Tangguh & Berdaya Juang': -10, 'Adaptif terhadap Perubahan': -5} },
+        { t: 'Opsi B', desc: 'Saya sadar itu tidak realistis. Saya perlu belajar beradaptasi dengan tekanan, bukan menghindarinya.', next: 'end', s: {'Kesadaran Diri & Rendah Hati': 10, 'Tangguh & Berdaya Juang': 5} }
+    ]},
+    'q5c2': { cluster: 5, label: 'Level 3', badge: 'Level 3', badgeClass: 'l3', text: 'Ini adalah red flag terbesar: mentalitas korban dan mudah menyerah. Kamu merasa penilaian saya terlalu keras, atau ini memang cerminan ketahananmu?', opts: [
+        { t: 'Opsi A', desc: 'Saya merasa penilaian Anda keras, tapi saya mengerti maksudnya dan saya akan mencoba untuk lebih tangguh ke depannya.', next: 'end', s: {'Stabil di Bawah Tekanan': 5, 'Kesadaran Diri & Rendah Hati': 5} },
+        { t: 'Opsi B', desc: 'Saya merasa ini memang cerminan saya saat ini dan saya butuh waktu untuk benar-benar memperbaiki mentalitas saya.', next: 'end', s: {'Kesadaran Diri & Rendah Hati': 10, 'Tangguh & Berdaya Juang': -5} }
+    ]}
+};
+
+const archetypes = {
+    defender: { name: "The Defender (Si Pembela Diri)", root: "Akar masalahmu bukan pada 'tidak tahu jawaban', tapi pada reaksi sistem saraf saat ego tersentuh. Kamu menganggap pertanyaan lanjutan sebagai serangan pribadi, bukan undangan untuk menggali lebih dalam.", quote: "Ketenanganmu di awal hanya topeng. Saat ditekan, egomu yang bicara.", steps: ["<strong>Fisik (The 2-Second Anchor):</strong> Saat assessor selesai bertanya, jangan langsung bicara. Tarik napas, letakkan kedua telapak tangan rata di atas meja, tekan perlahan 2 detik. Ini mengirim sinyal 'aman' ke otak.", "<strong>Mental (Labeling):</strong> Di dalam kepala, katakan: <em>'Ini bukan serangan. Ini hanya permintaan data.'</em>", "<strong>Verbal (The Bridge Phrase):</strong> Gunakan kalimat jembatan: <em>'Poin yang sangat tajam, Pak/Bu. Sejujurnya, di bagian itu saya memang belum mempertimbangkan X, namun yang saya lakukan adalah...'</em> Kalimat ini melucuti senjata assessor."] },
+    avoider: { name: "The Avoider (Si Penghindar Konflik)", root: "Kamu memiliki niat baik untuk tidak membuat keruh suasana, tapi di mata assessor, menghindari konflik diterjemahkan sebagai 'kurang punya inisiatif' dan 'takut mengambil risiko'. Kamu terlalu sering menunggu lampu hijau.", quote: "Kamu terlalu sering menunggu lampu hijau. Di mata assessor, ini bukan sopan, tapi takut mengambil risiko.", steps: ["<strong>Fisik (Postur Terbuka):</strong> Jangan menyilangkan tangan atau menunduk saat menjawab. Condongkan tubuh sedikit ke depan. Bahasa tubuh ini memaksa otakmu untuk masuk ke mode 'siap bertindak'.", "<strong>Mental (Reframing):</strong> Ubah mindset dari <em>'Saya tidak ingin mengganggu'</em> menjadi <em>'Menyampaikan masalah sejak dini adalah bentuk profesionalisme, bukan keluhan.'</em>", "<strong>Struktural (Formula Usulan):</strong> Hafalkan satu struktur kalimat ini: <em>'Saya melihat ada potensi hambatan di X. Usulan saya, kita lakukan Y. Apa pendapat Bapak/Ibu?'</em>"] },
+    overclaimer: { name: "The Over-claimer (Si Pencerita Sempurna)", root: "Kamu berusaha terlalu keras untuk terlihat sempurna. Ironisnya, di ruang asesmen, kesempurnaan itu mencurigakan. Assessor tidak mencari kandidat tanpa cacat; mereka mencari kandidat yang sadar akan cacatnya dan punya sistem untuk memperbaikinya.", quote: "Kesempurnaanmu mencurigakan. Assessor tidak mencari kandidat tanpa cacat, tapi yang sadar akan cacatnya.", steps: ["<strong>Fisik (Jeda Sadar):</strong> Sebelum menjawab pertanyaan tentang keberhasilan, ambil jeda 1 detik. Ini menghilangkan efek 'terdengar seperti teks yang dihafal'.", "<strong>Mental (Izin untuk Berantakan):</strong> Sadari bahwa cerita yang baik selalu memiliki 'bagian tengah yang berantakan'. Jangan langsung melompat dari Masalah ke Solusi.", "<strong>Verbal (Formula 'Dulu vs Sekarang'):</strong> Latih menceritakan kegagalan dengan struktur ini: <em>'Dulu saya terbiasa melakukan [Kebiasaan Lama] yang ternyata kurang efektif. Setelah sadar, saya menggantinya dengan [Sistem Baru], meskipun di awal masih ada yang [Kendala Kecil].'</em>"] },
+    blamer: { name: "The Blamer (Si Mentalitas Korban)", root: "Secara tidak sadar, kamu menghabiskan 70% waktu bicaramu untuk menjelaskan mengapa sesuatu gagal (karena orang lain, karena sistem), dan hanya 30% untuk menjelaskan apa yang kamu lakukan. Assessor mencatat ini sebagai 'rendahnya rasa kepemilikan (low ownership)'.", quote: "70% bicaramu adalah tentang 'mereka'. Assessor hanya mencatat satu hal: rendahnya rasa kepemilikan.", steps: ["<strong>Fisik (Tulis di Kertas):</strong> Saat berlatih, tulis ceritamu di kertas. Coret setiap kalimat yang subjeknya 'Mereka', 'Sistem', atau 'Situasi'. Paksa dirimu menulis ulang dengan subjek 'Saya'.", "<strong>Mental (Lingkaran Kendali):</strong> Gambar dua lingkaran. Lingkaran luar: Hal yang tidak bisa dikontrol (cuaca, mood atasan). Lingkaran dalam: Hal yang bisa dikontrol (respons saya, persiapan saya). Fokus 100% di lingkaran dalam.", "<strong>Verbal (Formula 'Meskipun... Saya...'):</strong> Latih kalimat ini: <em>'Meskipun situasinya [Faktor Eksternal], yang bisa saya kendalikan adalah [Tindakan Spesifik Saya]. Hasilnya memang belum sempurna, tapi saya belajar [Insight].'</em>"] },
+    peoplePleaser: { name: "The People Pleaser (Si Penjaga Perasaan)", root: "Kamu mengira mengiyakan semua permintaan adalah bentuk kerja sama yang baik. Di mata assessor, ini adalah red flag besar: kamu tidak punya batas (boundaries). Kamu akan cepat burnout, dan ketika kamu gagal memenuhi janji karena kewalahan, kamu akan terlihat tidak profesional.", quote: "Mengiyakan semua permintaan bukan kerja sama. Itu red flag besar bahwa kamu tidak punya batas.", steps: ["<strong>Fisik (The Pause Button):</strong> Saat diminta sesuatu di interview (atau kerja nanti), jangan langsung jawab 'Bisa, Pak!'. Tarik napas, lihat catatanmu, dan diam 2 detik.", "<strong>Mental (Reframing):</strong> Ubah mindset: <em>'Bilang tidak dengan sopan lebih profesional daripada bilang iya tapi mengecewakan di akhir.'</em>", "<strong>Verbal (Formula 'Yes, If...'):</strong> Latih kalimat ini: <em>'Saya bisa mengambil alih tugas X, Pak. Namun, agar kualitas tugas Y tidak turun, saya perlu menyesuaikan deadline-nya menjadi [Waktu]. Apakah ini bisa disepakati?'</em>"] },
+    loneWolf: { name: "The Lone Wolf (Si Ksatria Solo)", root: "Kamu sangat kompeten secara individu, tapi kamu adalah mimpi buruk bagi sebuah tim. Kamu menganggap mendelegasikan tugas adalah 'buang waktu' atau 'mengurangi kualitas'. Assessor mencatat ini sebagai: 'Tidak bisa mengembangkan orang lain, dan akan menjadi bottleneck saat proyek membesar'.", quote: "Kamu kompeten, tapi kamu mimpi buruk bagi tim. Mendelegasikan bukan buang waktu.", steps: ["<strong>Fisik (Tangan di Belakang Punggung):</strong> Saat kerja kelompok, paksa dirimu untuk tidak menyentuh keyboard atau alat kerja selama 15 menit pertama. Hanya boleh bicara dan menunjuk.", "<strong>Mental (Leader vs Doer):</strong> Sadari bahwa nilai kamu di perusahaan besar bukan lagi dari 'seberapa cepat kamu kerja', tapi 'seberapa cepat tim kamu kerja karena arahanmu'.", "<strong>Struktural (Formula Delegasi 3P):</strong> Saat membagi tugas, gunakan format ini: <em>'Tugas ini adalah [Proyek]. Hasil akhir yang saya butuhkan adalah [Produk]. Tolong kerjakan dengan caramu, dan kita cek progres di [Poin waktu].'</em>"] },
+    overAnalyzer: { name: "The Over-Analyzer (Si Lumpuh Analisis)", root: "Kamu terjebak di 'Analysis Paralysis'. Kamu merasa belum siap bertindak sampai kamu punya 100% data dan rencana yang sempurna. Di ruang asesmen, assessor tidak mencari pemikir yang sempurna; mereka mencari doer yang berani mengambil langkah pertama dengan informasi 70%.", quote: "Kamu terjebak analisis lumpuh. Assessor mencari doer dengan informasi 70%, bukan pemikir dengan 100% data.", steps: ["<strong>Fisik (Aturan 5 Detik):</strong> Saat kamu punya ide atau tahu harus melakukan sesuatu, hitung mundur 5-4-3-2-1 di dalam hati, dan langsung lakukan tindakan fisik terkecil (misal: membuka laptop, mengirim 1 chat).", "<strong>Mental (MVP Mindset):</strong> Terapkan konsep Minimum Viable Product. Tindakan yang 'cukup baik dan dilakukan hari ini' lebih berharga daripada rencana 'sempurna' yang dilakukan minggu depan.", "<strong>Verbal (Formula 'Draft 1'):</strong> Saat ditanya solusi di interview, jangan berikan rencana final. Katakan: <em>'Ini adalah Draft 1 atau langkah pertama yang akan saya ambil hari ini untuk menguji asumsi. Setelah ada data, saya akan menyesuaikan.'</em>"] },
+    firefighter: { name: "The Firefighter (Si Reaktif / Panic Button)", root: "Kamu adalah pekerja yang sangat baik di lingkungan yang stabil. Tapi dunia kerja nyata penuh dengan perubahan dadakan. Saat rencana berubah, kamu panik, menyalahkan keadaan, atau diam menunggu instruksi baru. Assessor melihat ini sebagai: 'Tidak bisa diandalkan saat krisis'.", quote: "Kamu bagus di zona nyaman. Tapi saat rencana berubah, kamu panik. Assessor mencatat: tidak bisa diandalkan saat krisis.", steps: ["<strong>Fisik (Grounding Technique):</strong> Saat ada kabar buruk atau perubahan mendadak, letakkan kedua kaki rata di lantai, rasakan tumpuanmu. Ini menghentikan respons 'fight or flight' (panik) di otak.", "<strong>Mental (The Pivot):</strong> Ubah pertanyaan di kepalamu dari <em>'Kenapa ini harus terjadi sekarang?!'</em> menjadi <em>'Oke, apa satu hal kecil yang bisa saya kendalikan dalam 5 menit ke depan?'</em>", "<strong>Verbal (Formula 'Acknowledge & Pivot'):</strong> Latih kalimat ini saat dihadapkan pada perubahan: <em>'Saya mengerti situasinya berubah dan ini menantang. Fokus saya sekarang adalah mengamankan [Aset/Data X], lalu saya akan buat rencana darurat dalam 10 menit.'</em>"] }
+};
+
+function getArchetype() {
+    let minDim = dims[0];
+    dims.forEach(d => { if (scores[d] < scores[minDim]) minDim = d; });
+    if (minDim === 'Stabil di Bawah Tekanan') return archetypes.defender;
+    if (minDim === 'Konsisten & Otentik') return archetypes.overclaimer;
+    if (minDim === 'Berorientasi Kolaborasi') return archetypes.loneWolf;
+    if (minDim === 'Tangguh & Berdaya Juang') return archetypes.blamer;
+    if (minDim === 'Kesadaran Diri & Rendah Hati') return archetypes.overclaimer;
+    if (minDim === 'Adaptif terhadap Perubahan') return archetypes.firefighter;
+    if (minDim === 'Solutif & Resourceful') return archetypes.overAnalyzer;
+    if (minDim === 'Tangkas Belajar') return archetypes.overAnalyzer;
+    return archetypes.defender;
+}
+
+const root = document.getElementById('root');
+const prog = document.getElementById('prog');
+let step = 0; const totalSteps = 107;
+
+function render(id) {
+    if (id === 'end') { showReport(); return; }
+    const n = nodes[id];
+    setCluster(n.cluster);
+    step++;
+    prog.style.width = ((step-1)/(totalSteps-1)*100) + '%';
+    
+    let html = `<div class="node active"><div class="q-label">${n.label}</div>`;
+    if (n.badge) html += `<div class="badge ${n.badgeClass||''}">${n.badge}</div>`;
+    html += `<div class="q-text">${n.text}</div>`;
+    if (n.desc) html += `<div class="q-desc">${n.desc}</div>`;
+    
+    if (n.hasNameInput) {
+        html += `<div class="name-input-group"><label class="name-label" for="user-name">Nama Lengkap Kamu</label><input type="text" id="user-name" class="name-input" placeholder="Ketik nama lengkapmu di sini..." autocomplete="name"><div class="name-hint" id="name-hint">⚠️ Nama lengkap wajib diisi minimal 2 kata (nama depan dan nama belakang) untuk melanjutkan simulasi.</div></div>`;
+        html += `<button class="btn" id="btn-start-sim" disabled>Mulai Simulasi</button>`;
+    }
+    
+    if (n.opts) {
+        n.opts.forEach((o, i) => {
+            html += `<button class="option" onclick="choose('${id}', ${i})"><span class="option-label">${o.t}</span><span class="option-text">${o.desc}</span></button>`;
+        });
+    } else if (!n.hasNameInput) {
+        html += `<button class="btn" onclick="next('${n.next}')">${n.btn}</button>`;
+    }
+    html += `</div>`;
+    root.innerHTML = html;
+    
+    if (n.hasNameInput) {
+        const nameInput = document.getElementById('user-name');
+        const btnStart = document.getElementById('btn-start-sim');
+        const nameHint = document.getElementById('name-hint');
+        
+        const countWords = (str) => str.trim().split(/\s+/).filter(Boolean).length;
+        const isValidName = (str) => countWords(str) >= 2;
+        
+        nameInput.addEventListener('input', (e) => {
+            const val = e.target.value.trim();
+            if (isValidName(val)) {
+                userName = val;
+                btnStart.disabled = false;
+                nameInput.classList.remove('error');
+                nameHint.classList.remove('visible');
+            } else {
+                userName = '';
+                btnStart.disabled = true;
+            }
+        });
+        
+        nameInput.addEventListener('blur', () => {
+            const val = nameInput.value.trim();
+            if (val.length > 0 && !isValidName(val)) {
+                nameInput.classList.add('error');
+                nameHint.classList.add('visible');
+            }
+        });
+        
+        const submitName = () => {
+            const val = nameInput.value.trim();
+            if (!isValidName(val)) {
+                nameInput.classList.add('error');
+                nameHint.classList.add('visible');
+                nameInput.focus();
+                return;
+            }
+            userName = val;
+            next('q1');
+        };
+        
+        btnStart.addEventListener('click', submitName);
+        nameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') submitName();
+        });
+        nameInput.focus();
+    }
+    window.scrollTo(0,0);
+}
+
+function choose(nodeId, optIdx) {
+    const o = nodes[nodeId].opts[optIdx];
+    for (let d in o.s) { if (scores[d] !== undefined) scores[d] = Math.max(0, Math.min(100, scores[d] + o.s[d])); }
+    if (nodeId.startsWith('q1')) { if (nodeId === 'q1') userQuotes.q1.l1 = o.desc; else if (['q1a','q1b','q1c'].includes(nodeId)) userQuotes.q1.l2 = o.desc; else userQuotes.q1.l3 = o.desc; } 
+    else if (nodeId.startsWith('q2')) { if (nodeId === 'q2') userQuotes.q2.l1 = o.desc; else if (['q2a','q2b','q2c'].includes(nodeId)) userQuotes.q2.l2 = o.desc; else userQuotes.q2.l3 = o.desc; } 
+    else if (nodeId.startsWith('q3')) { if (nodeId === 'q3') userQuotes.q3.l1 = o.desc; else if (['q3a','q3b','q3c'].includes(nodeId)) userQuotes.q3.l2 = o.desc; else userQuotes.q3.l3 = o.desc; } 
+    else if (nodeId.startsWith('q4')) { if (nodeId === 'q4') userQuotes.q4.l1 = o.desc; else if (['q4a','q4b','q4c'].includes(nodeId)) userQuotes.q4.l2 = o.desc; else userQuotes.q4.l3 = o.desc; } 
+    else if (nodeId.startsWith('q5')) { if (nodeId === 'q5') userQuotes.q5.l1 = o.desc; else if (['q5a','q5b','q5c'].includes(nodeId)) userQuotes.q5.l2 = o.desc; else userQuotes.q5.l3 = o.desc; }
+    render(o.next);
+}
+function next(id) { render(id); }
+
+function showReport() {
+    setCluster(1);
+    prog.style.width = '100%';
+    root.style.display = 'none';
+    document.getElementById('report').classList.add('active');
+    document.getElementById('report-user-name').textContent = userName || 'Kandidat';
+    drawRadar('radar', 320);
+    drawRadar('radar-share', 180);
+    generateFullReport();
+    window.scrollTo(0,0);
+}
+
+function drawRadar(canvasId, size) {
+    const c = document.getElementById(canvasId);
+    const ctx = c.getContext('2d');
+    const w = c.width, h = c.height, cx = w/2, cy = h/2, r = size/2 - 20;
+    ctx.clearRect(0,0,w,h);
+    const n = 8;
+    for (let lvl = 1; lvl <= 4; lvl++) {
+        ctx.beginPath();
+        for (let i = 0; i <= n; i++) {
+            const a = (Math.PI * 2 * i / n) - Math.PI/2;
+            const x = cx + Math.cos(a) * (r * lvl/4);
+            const y = cy + Math.sin(a) * (r * lvl/4);
+            if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.strokeStyle = '#E5DFD5'; ctx.stroke();
+    }
+    ctx.font = '10px Inter'; ctx.fillStyle = '#5C554E'; ctx.textAlign = 'center';
+    for (let i = 0; i < n; i++) {
+        const a = (Math.PI * 2 * i / n) - Math.PI/2;
+        const x = cx + Math.cos(a) * r; const y = cy + Math.sin(a) * r;
+        ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(x,y); ctx.strokeStyle = '#E5DFD5'; ctx.stroke();
+        if(canvasId === 'radar') {
+            ctx.fillText(dims[i].split(' ')[0], cx + Math.cos(a) * (r + 20), cy + Math.sin(a) * (r + 20) + 4);
+        }
+    }
+    ctx.beginPath();
+    for (let i = 0; i <= n; i++) {
+        const idx = i % n; const a = (Math.PI * 2 * idx / n) - Math.PI/2;
+        const val = scores[dims[idx]] / 100;
+        const x = cx + Math.cos(a) * (r * val); const y = cy + Math.sin(a) * (r * val);
+        if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.fillStyle = 'rgba(181, 101, 74, 0.2)'; ctx.fill();
+    ctx.strokeStyle = '#B5654A'; ctx.lineWidth = 2; ctx.stroke();
+}
+
+function generateFullReport() {
+    let minD = dims[0], maxD = dims[0];
+    dims.forEach(d => { if (scores[d] < scores[minD]) minD = d; if (scores[d] > scores[maxD]) maxD = d; });
+    const displayName = userName || 'Kandidat';
+    const arch = getArchetype();
+
+    document.getElementById('share-name').textContent = displayName;
+    document.getElementById('share-archetype').textContent = arch.name;
+    document.getElementById('share-quote').textContent = `"${arch.quote}"`;
+
+    let verdictHtml = '';
+    if (scores[minD] > 90) {
+        verdictHtml = `<div class="verdict-box"><h3>Dinamika Dirimu: Sangat Terkendali & Autentik</h3><p>${displayName}, luar biasa. Di seluruh 8 dimensi, instingmu menunjukkan kematangan yang jarang ditemukan. Kamu berhasil mempertahankan otentisitas dan ketenangan bahkan saat Level 3 menekan.</p></div>`;
+    } else {
+        let vText = scores[minD] < 40 ? 'Rentan Goyah Saat Ditekan' : (scores[minD] > 70 ? 'Cukup Terkendali' : 'Cukup Baik tapi Ada Celah');
+        verdictHtml = `<div class="verdict-box"><h3>Dinamika Dirimu: ${vText}</h3><p>${displayName}, kamu menunjukkan kekuatan di <strong>${maxD}</strong> (Skor: ${scores[maxD]}%), namun insting alamimu cenderung goyah di <strong>${minD}</strong> (Skor: ${scores[minD]}%) saat menghadapi Level 3.</p></div>`;
+    }
+    document.getElementById('verdict-container').innerHTML = verdictHtml;
+
+    let scenariosHtml = '';
+    const qTitles = ['Pembuka & Motivasi', 'Kolaborasi & Konflik', 'Kegagalan & Tanggung Jawab', 'Ambiguitas & Pemecahan Masalah', 'Tekanan & Ketahanan'];
+    const qContexts = [
+        "Di awal, kamu mencoba memproyeksikan citra tertentu. Namun, saat saya tekan di Level 3 tentang bukti dan ambisi, topeng itu sedikit retak.",
+        "Saat dihadapkan pada konflik, insting pertamamu keluar. Di Level 3, ketika saya tuduh kamu kurang tegas atau mentalitas korban, responsmu menunjukkan apakah kamu benar-benar bisa berkolaborasi atau hanya sekadar 'nikmat' saat semuanya baik-baik saja.",
+        "Pertanyaan kegagalan adalah jebakan klasik. Di L1, kamu memilih posisi aman. Di L3, saat saya desak bahwa perubahanmu tidak mulus, kamu menunjukkan apakah kamu berani jujur pada realita lapangan.",
+        "Tanpa SOP, wajah aslimu keluar. L1 menunjukkan pendekatanmu. Di L3, ketika saya tantang kemandirianmu, kamu menunjukkan apakah kamu siap untuk lingkungan dinamis atau lebih suka bermain aman.",
+        "Ini ujian composure. L1 kamu menunjukkan respons awal. Di L3, saat saya tekan bahwa kamu terlihat tidak profesional atau mudah menyerah, kamu menunjukkan ketahanan mentalmu yang sebenarnya."
+    ];
+
+    for(let i=1; i<=5; i++) {
+        let qKey = 'q'+i;
+        let l1 = userQuotes[qKey].l1 || "Tidak ada jawaban tercatat.";
+        let l3 = userQuotes[qKey].l3 || "Tidak ada jawaban tercatat.";
+        scenariosHtml += `<div class="scenario-card"><div class="scenario-title">Skenario ${i}: ${qTitles[i-1]}</div><div class="quote-mirror"><div class="quote-item l1"><div class="quote-label">Level 1 (Topeng Awal)</div><div class="quote-text">"${l1}"</div></div><div class="quote-item l3"><div class="quote-label">Level 3 (Wajah Asli saat Ditekan)</div><div class="quote-text">"${l3}"</div></div></div><div class="narrative"><h4>Dinamika Dirimu</h4><p>${qContexts[i-1]} Perhatikan perbedaan antara kutipan Level 1 dan Level 3 di atas. Di situlah letak celah antara niatmu dan apa yang sebenarnya terbaca oleh assessor.</p></div><div class="narrative terracotta"><h4>Catatan Senior Assessor</h4><p>L1: "${l1.substring(0,60)}..." ➔ Saya menulis: 'Kandidat ini ${l1.includes('diam') ? 'menghindar' : (l1.includes('tim') ? 'fokus tim' : 'terlihat realistis')}.' <br>L3: "${l3.substring(0,60)}..."  Saya menulis: '${l3.includes('solusi') ? 'Bisa diandalkan.' : (l3.includes('aman') ? 'Kurang mandiri.' : 'Perlu latih mental.')}'</p></div></div>`;
+    }
+    document.getElementById('scenarios-container').innerHTML = scenariosHtml;
+
+    let actionHtml = '';
+    if (scores[minD] > 90) {
+        actionHtml = `<div class="action-plan-box"><h3>Langkah Selanjutnya</h3><p>${displayName}, bersiaplah interview sesungguhnya di kesempatan interview dari peluang berikutnya. Kamu sudah punya modal yang cukup.</p></div>`;
+    } else {
+        let stepsHtml = arch.steps.map(s => `<li>${s}</li>`).join('');
+        const aiPrompt = `Bertindaklah sebagai "Senior Assessor" yang jujur, tajam, dan tidak basa-basi.\n\nSaya baru saja menjalani simulasi dan mendapat laporan bahwa pola dominan saya adalah: ${arch.name}.\nAkar masalah saya adalah: ${arch.root}\nAction Plan yang harus saya latih adalah: ${arch.name} - Melatih perubahan perilaku.\n\nTolong lakukan "Assessor Drill" dengan saya dengan aturan berikut:\n1. Jangan beri saya teori atau tips umum. \n2. Berikan saya 1 pertanyaan interview situasional yang SANGAT MENEKAN dan dirancang khusus untuk memicu kelemahan spesifik dari arketype saya di atas.\n3. Tunggu saya menjawab. \n4. Setelah saya menjawab, bedah jawaban saya secara forensik: \n   - Apakah saya sudah menggunakan teknik dari Action Plan saya? \n   - Di bagian mana saya "kambuh" ke pola lama?\n   - Beri saya skor 1-10 untuk ketenangan dan struktur jawaban saya.\n5. Jika skor saya di bawah 7, beri saya pertanyaan tekanan lagi yang lebih sulit. Jika di atas 7, beri saya apresiasi singkat dan akhiri sesi.\n\nJika kamu mengerti, jawab hanya dengan: "Siap. Saya sudah membaca profil Anda. Berikut adalah pertanyaan pertama Anda..." lalu langsung berikan pertanyaan pertamanya. Jangan jelaskan aturan ini lagi.`;
+
+        actionHtml = `<div class="action-plan-box"><h3>Action Plan: ${arch.name}</h3><p>${displayName}, ${arch.root}</p><ul>${stepsHtml}</ul></div><div class="ai-prompt-box"><h4>🤖 Latih dengan AI (Assessor Drill)</h4><p>${displayName}, mau menguji apakah kamu benar-benar bisa mengubah pola ini? Salin (copy) teks di bawah ini, buka ChatGPT / Claude / Gemini di tab baru, dan tempel (paste). Biarkan AI melatihmu seperti assessor sungguhan.</p><div class="prompt-text" id="ai-prompt-text">${aiPrompt}</div><button class="btn btn-copy" onclick="copyPrompt()">Salin Prompt AI</button></div>`;
+    }
+    document.getElementById('action-plan-container').innerHTML = actionHtml;
+
+    let ctaHtml = '';
+    if (scores[minD] <= 90) {
+        ctaHtml = `<div class="cta-box"><h3>${displayName}, Pola Ini Bisa Diubah.</h3><p>Mengetahui dan melakukannya di bawah tekanan adalah dua hal berbeda. Latih dengan terpandu.</p><p style="font-size:12px; color:#f0e6e2; margin-bottom:16px;">📅 <strong>Bootcamp Intensif 3 Hari</strong> (Segera Hadir)</p><a href="mailto:widhi.insan.nugra@gmail.com?subject=Daftar Tunggu Bootcamp KSA" class="btn">Kirim Email untuk Daftar Tunggu</a></div>`;
+    }
+    document.getElementById('cta-container').innerHTML = ctaHtml;
+}
+
+function copyPrompt() {
+    const textElement = document.getElementById('ai-prompt-text');
+    const textToCopy = textElement.innerText;
+    const btn = document.querySelector('.btn-copy');
+    const textArea = document.createElement("textarea");
+    textArea.value = textToCopy;
+    textArea.style.position = "fixed"; textArea.style.left = "-9999px";
+    document.body.appendChild(textArea); textArea.focus(); textArea.select();
+    try {
+        document.execCommand('copy');
+        const originalText = btn.innerText;
+        btn.innerText = '✅ Tersalin! Buka Chat AI-mu sekarang.';
+        setTimeout(() => { btn.innerText = originalText; }, 3000);
+    } catch (err) { btn.innerText = ' Gagal menyalin. Salin manual ya.'; }
+    document.body.removeChild(textArea);
+}
+
+function copyViralCaption() {
+    const arch = getArchetype();
+    const displayName = userName || 'Kandidat';
+    const caption = `Baru nyoba simulasi interview dari Senior Assessor beneran, dan hasilnya nampol banget. \n\nTernyata aku ${arch.name}. \nKata assessor-nya: "${arch.quote}"\n\nGila, akurat banget sih. Buat yang mau nyoba ngetes 'wajah asli' kalian pas di-interview, cobain deh. Link-nya: https://ksa-rs.terasfounder.id 👇\n\n#KacamataSeniorAssessor #InterviewHacks #FreshGradLife #Karir #SimulasiInterview`;
+    
+    const btn = document.querySelector('.btn-viral');
+    const textArea = document.createElement("textarea");
+    textArea.value = caption;
+    textArea.style.position = "fixed"; textArea.style.left = "-9999px";
+    document.body.appendChild(textArea); textArea.focus(); textArea.select();
+    try {
+        document.execCommand('copy');
+        const originalText = btn.innerText;
+        btn.innerText = '✅ Caption Tersalin! Langsung Paste di Story/Thread.';
+        setTimeout(() => { btn.innerText = originalText; }, 4000);
+    } catch (err) { btn.innerText = ' Gagal menyalin.'; }
+    document.body.removeChild(textArea);
+}
+
+render('intro');
+</script>
+</body>
+</html>
